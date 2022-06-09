@@ -1,0 +1,100 @@
+<form theme="dark">
+  <label>Engie UK - Correlated Mule API Logs Table</label>
+  <description>Correlated Event Logs Table Dashboard</description>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="timeToken" searchWhenChanged="true">
+      <label>Time</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="envToken" searchWhenChanged="true">
+      <label>Environment</label>
+      <choice value="DEV">DEV</choice>
+      <choice value="INT">INT</choice>
+      <choice value="PRD">PRD</choice>
+      <default>DEV</default>
+      <initialValue>DEV</initialValue>
+      <prefix>source="*</prefix>
+      <suffix>"</suffix>
+    </input>
+    <input type="dropdown" token="apiToken" searchWhenChanged="true">
+      <label>Component</label>
+      <fieldForLabel>results</fieldForLabel>
+      <fieldForValue>results</fieldForValue>
+      <search>
+        <query>index="engie-mule-logs" |  eval results=split(source,"_") |eval results=mvindex(results,0)| table results | appendpipe[ eval results="*"] | dedup results</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <prefix>source="</prefix>
+      <suffix>*"</suffix>
+      <default>s-engie-auth</default>
+      <initialValue>s-engie-auth</initialValue>
+    </input>
+    <input type="text" token="correlationidToken" searchWhenChanged="true">
+      <label>CorrelationId</label>
+      <prefix>properties.correlationId="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="objectToken">
+      <label>Business Object</label>
+      <fieldForLabel>Object</fieldForLabel>
+      <fieldForValue>Object</fieldForValue>
+      <search>
+        <query>index="engie-mule-logs" $envToken$ | fields message.content.attributes.businessKey2Name |rename message.content.attributes.businessKey2Name as Object | dedup Object |  appendpipe[ eval Object="*"]</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <prefix>message.content.attributes.businessKey2Name="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="text" token="objectidToken">
+      <label>Object ID</label>
+      <default>*</default>
+      <prefix>message.content.attributes.businessKey2Value="</prefix>
+      <suffix>"</suffix>
+      <initialValue>*</initialValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Correlated Logs Table</title>
+      <table>
+        <search>
+          <query>index="engie-mule-logs" $envToken$ $apiToken$ $correlationidToken$ | transaction properties.correlationId |table  message.timestamp message.content.attributes.businessKey2Name message.content.attributes.businessKey2Value message.timestamp  severity properties.correlationId message.muleRuntime.environment message.applicationName   message.locationInfo.fileName message.locationInfo.fileName message.locationInfo.rootContainer message.message message.error.detailedDescription|rename message.timestamp AS Timestamp message.content.attributes.businessKey2Name AS BusinessObject message.content.attributes.businessKey2Value AS ObjectId  message.muleRuntime.environment AS Environment message.applicationName AS Api severity AS Severity properties.correlationId AS CorrelationId message.locationInfo.fileName AS Process message.locationInfo.rootContainer AS Step message.message AS Message message.error.detailedDescription as ErrorDescription |  eval Severity_Level = case(Severity="INFO",0,Severity="ERROR",10)|rangemap field=Severity_Level low=0-9 severe=10-19</query>
+          <earliest>$timeToken.earliest$</earliest>
+          <latest>$timeToken.latest$</latest>
+        </search>
+        <option name="count">50</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">true</option>
+        <option name="wrap">false</option>
+        <format type="color" field="Api">
+          <colorPalette type="list">[#53A051,#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">0,30,70,100</scale>
+        </format>
+        <format type="color" field="CorrelationId">
+          <colorPalette type="list">[#53A051,#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">0,30,70,100</scale>
+        </format>
+        <format type="color" field="ClientID">
+          <colorPalette type="list">[#53A051,#006D9C,#F8BE34,#F1813F,#DC4E41]</colorPalette>
+          <scale type="threshold">0,30,70,100</scale>
+        </format>
+        <format type="color" field="Severity">
+          <colorPalette type="map">{"INFO":#53A051,"ERROR":#DC4E41,"ERROR,INFO":#DC4E41,"ERROR,INFO,WARN":#DC4E41,"INFO,WARN":#53A051}</colorPalette>
+        </format>
+        <drilldown>
+          <link target="_blank">/app/mulesoft_poc/engie?form.envToken=$row.Environment$&amp;form.correlationidToken=$row.CorrelationId$&amp;form.apiToken=*</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>

@@ -1,0 +1,81 @@
+<form theme="dark">
+  <label>Engie UK - Mule API Logs</label>
+  <description>General Event Logs Dashboard</description>
+  <fieldset submitButton="false" autoRun="true">
+    <input type="time" token="timeToken" searchWhenChanged="true">
+      <label>Time</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="envToken" searchWhenChanged="true">
+      <label>Environment</label>
+      <choice value="DEV">DEV</choice>
+      <choice value="INT">INT</choice>
+      <choice value="PRD">PRD</choice>
+      <default>DEV</default>
+      <initialValue>DEV</initialValue>
+      <prefix>source="*</prefix>
+      <suffix>"</suffix>
+    </input>
+    <input type="dropdown" token="severityToken">
+      <label>Severity</label>
+      <choice value="INFO">INFO</choice>
+      <choice value="WARN">WARN</choice>
+      <choice value="ERROR">ERROR</choice>
+      <choice value="*">*</choice>
+      <default>*</default>
+      <prefix>severity="</prefix>
+      <suffix>"</suffix>
+      <initialValue>*</initialValue>
+    </input>
+    <input type="dropdown" token="apiToken" searchWhenChanged="true">
+      <label>Component</label>
+      <fieldForLabel>results</fieldForLabel>
+      <fieldForValue>results</fieldForValue>
+      <search>
+        <query>index="engie-mule-logs" |  eval results=split(source,"_") |eval results=mvindex(results,0)| table results | appendpipe[ eval results="*"] | dedup results</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <prefix>source="</prefix>
+      <suffix>*"</suffix>
+      <default>s-engie-auth</default>
+      <initialValue>s-engie-auth</initialValue>
+    </input>
+    <input type="text" token="correlationidToken" searchWhenChanged="true">
+      <label>CorrelationId</label>
+      <prefix>properties.correlationId="</prefix>
+      <suffix>"</suffix>
+      <default>*</default>
+    </input>
+    <input type="dropdown" token="objectToken">
+      <label>Business Object</label>
+      <fieldForLabel>Object</fieldForLabel>
+      <fieldForValue>Object</fieldForValue>
+      <search>
+        <query>index="engie-mule-logs" $envToken$ $severityToken$ $apiToken$ $correlationidToken$ | fields message.content.attributes.businessKey2Name |rename message.content.attributes.businessKey2Name as Object | dedup Object</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Events</title>
+      <event>
+        <search>
+          <query>index="engie-mule-logs" $envToken$ $severityToken$ $apiToken$ $correlationidToken$ | fields *</query>
+          <earliest>$timeToken.earliest$</earliest>
+          <latest>$timeToken.latest$</latest>
+        </search>
+        <option name="count">50</option>
+        <option name="list.drilldown">none</option>
+        <option name="maxLines">5</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">1</option>
+      </event>
+    </panel>
+  </row>
+</form>
