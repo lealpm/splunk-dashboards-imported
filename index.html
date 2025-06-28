@@ -1,79 +1,167 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>MuleSoft Deployment Tracker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MuleSoft Deployment Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; padding: 1rem; }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { padding: 0.5rem; border: 1px solid #ccc; }
-    th { background: #f0f0f0; }
-    .env-dev { color: green; }
-    .env-test { color: orange; }
-    .env-prod { color: red; }
+    body {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+    }
+
+    header {
+      background-color: #0076ce;
+      color: white;
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select {
+      margin-top: 0.5rem;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem;
+      font-size: 1rem;
+      width: 100%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    th {
+      background-color: #e8f1fb;
+    }
+
+    .status-success {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-failed {
+      color: red;
+      font-weight: bold;
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      color: #888;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
-  <h1>MuleSoft Deployment Tracker</h1>
+  <header>MuleSoft Deployment Dashboard</header>
+  <div class="container">
+    <label for="version-select">Select Version:</label>
+    <select id="version-select"></select>
 
-  <label for="versionSelect">Select Version:</label>
-  <select id="versionSelect"></select>
+    <table id="deployment-table" style="display: none;">
+      <thead>
+        <tr>
+          <th>Environment</th>
+          <th>Timestamp</th>
+          <th>Commit</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-  <table id="deployTable">
-    <thead>
-      <tr>
-        <th>Environment</th>
-        <th>Timestamp</th>
-        <th>Commit</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <p id="no-data" style="display:none; color:#999;">No deployments found for selected version.</p>
+  </div>
+
+  <footer>
+    Anypoint-style Dashboard · GitHub Actions · MuleSoft
+  </footer>
 
   <script>
-    const versionSelect = document.getElementById("versionSelect");
-    const tableBody = document.querySelector("#deployTable tbody");
-    let deployments = [];
+    async function loadDeployments() {
+      try {
+        const res = await fetch('data/deployments.json');
+        const deployments = await res.json();
 
-    async function fetchDeployments() {
-      const res = await fetch("data/deployments.json");
-      deployments = await res.json();
+        const versionSelect = document.getElementById('version-select');
+        const table = document.getElementById('deployment-table');
+        const tableBody = table.querySelector('tbody');
+        const noData = document.getElementById('no-data');
 
-      const versions = [...new Set(deployments.map(d => d.version))].sort().reverse();
-      versions.forEach(v => {
-        const opt = document.createElement("option");
-        opt.value = v;
-        opt.textContent = v;
-        versionSelect.appendChild(opt);
-      });
+        const versions = [...new Set(deployments.map(d => d.version))].sort().reverse();
+        versions.forEach(v => {
+          const option = document.createElement('option');
+          option.value = v;
+          option.textContent = v;
+          versionSelect.appendChild(option);
+        });
 
-      loadVersion(versions[0]);
-    }
+        function renderTable(version) {
+          const filtered = deployments.filter(d => d.version === version);
+          tableBody.innerHTML = '';
 
-    function loadVersion(version) {
-      const filtered = deployments.filter(d => d.version === version);
-      tableBody.innerHTML = '';
+          if (filtered.length === 0) {
+            table.style.display = 'none';
+            noData.style.display = 'block';
+            return;
+          }
 
-      if (filtered.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="4">No deployments for this version.</td></tr>`;
-        return;
+          filtered.forEach(({ environment, timestamp, commit, status }) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${environment}</td>
+              <td>${new Date(timestamp).toLocaleString()}</td>
+              <td><code>${commit}</code></td>
+              <td class="status-${status.toLowerCase()}">${status}</td>
+            `;
+            tableBody.appendChild(row);
+          });
+
+          table.style.display = 'table';
+          noData.style.display = 'none';
+        }
+
+        versionSelect.addEventListener('change', () => {
+          renderTable(versionSelect.value);
+        });
+
+        // Load initial version
+        if (versions.length > 0) {
+          versionSelect.value = versions[0];
+          renderTable(versions[0]);
+        }
+
+      } catch (err) {
+        console.error('Error loading deployments:', err);
+        document.querySelector('.container').innerHTML = '<p style="color: red;">Failed to load deployment data.</p>';
       }
-
-      filtered.sort((a, b) => a.environment.localeCompare(b.environment));
-      filtered.forEach(d => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td class="env-${d.environment}">${d.environment}</td>
-          <td>${d.timestamp}</td>
-          <td><code>${d.commit}</code></td>
-          <td>${d.status}</td>
-        `;
-        tableBody.appendChild(row);
-      });
     }
 
-    versionSelect.addEventListener("change", e => loadVersion(e.target.value));
-    fetchDeployments();
+    loadDeployments();
   </script>
 </body>
 </html>
