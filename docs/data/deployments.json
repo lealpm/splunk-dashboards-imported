@@ -15,6 +15,12 @@
     "version": "1.0.1-build.94",
     "commit": "7588ebd8fc0d73f19b71f03e2a0cad7d39c44b4d",
     "builtAt": "2025-07-01T10:25:52Z",
-    "environments": []
+    "environments": [
+      {
+        "name": "DEV",
+        "status": "failed",
+        "deployedAt": "2025-07-01T12:02:42Z"
+      }
+    ]
   }
 ]
