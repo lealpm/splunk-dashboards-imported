@@ -121,22 +121,24 @@
         });
 
         function renderTable(version) {
-          const filtered = deployments.filter(d => d.version === version);
+          // Find deployment object for the selected version
+          const deployment = deployments.find(d => d.version === version);
+
           tableBody.innerHTML = '';
 
-          if (filtered.length === 0) {
+          if (!deployment || !deployment.environments || deployment.environments.length === 0) {
             table.style.display = 'none';
             noData.style.display = 'block';
             return;
           }
 
-          filtered.forEach(({ environment, timestamp, commit, status }) => {
+          deployment.environments.forEach(env => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${environment}</td>
-              <td>${new Date(timestamp).toLocaleString()}</td>
-              <td><code>${commit}</code></td>
-              <td class="status-${status.toLowerCase()}">${status}</td>
+              <td>${env.name}</td>
+              <td>${env.deployedAt ? new Date(env.deployedAt).toLocaleString() : 'N/A'}</td>
+              <td><code>${deployment.commit}</code></td>
+              <td class="status-${env.status.toLowerCase()}">${env.status}</td>
             `;
             tableBody.appendChild(row);
           });

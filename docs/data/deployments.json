@@ -1,23 +1,20 @@
 [
   {
-    "version": "1.2.3",
-    "environment": "dev",
-    "commit": "abc1234",
-    "timestamp": "2025-06-27T12:30:00Z",
-    "status": "failed"
+    "version": "1.0.1-build.88",
+    "commit": "fa5efc21d22a4cbf1e30a7ac47b7dbfb3e68aee6",
+    "builtAt": "2025-07-01T08:49:12Z",
+    "environments": []
   },
   {
-    "version": "1.2.3",
-    "environment": "prod",
-    "commit": "abc1234",
-    "timestamp": "2025-06-27T13:00:00Z",
-    "status": "success"
+    "version": "1.0.1-build.93",
+    "commit": "b0c237767a7585a03127e8bdb787fbba09032588",
+    "builtAt": "2025-07-01T10:23:19Z",
+    "environments": []
   },
   {
-    "version": "1.2.2",
-    "environment": "test",
-    "commit": "def5678",
-    "timestamp": "2025-06-26T18:00:00Z",
-    "status": "success"
+    "version": "1.0.1-build.94",
+    "commit": "7588ebd8fc0d73f19b71f03e2a0cad7d39c44b4d",
+    "builtAt": "2025-07-01T10:25:52Z",
+    "environments": []
   }
 ]
